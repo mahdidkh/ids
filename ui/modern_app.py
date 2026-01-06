@@ -1,10 +1,19 @@
 import flet as ft
+import os
+import sys
+import threading
+import time
+
+# Teacher says: This part is CRITICAL to find the 'core' folder!
+# We add the parent directory (project root) to Python's search list.
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if BASE_DIR not in sys.path:
+    sys.path.append(BASE_DIR)
+
 from views.home_view import HomeView
 from views.alerts_view import AlertsView
 from views.attacks_view import AttacksView
 from views.firewall_view import FirewallView
-import threading
-import time
 
 def main(page: ft.Page):
     page.title = "Mini IDS - Modern Dashboard"

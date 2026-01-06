@@ -1,5 +1,6 @@
 import flet as ft
 from utils.data_handler import get_firewall_rules, save_firewall_rules
+from core.firewall_manager import FirewallManager
 
 def FirewallView(page: ft.Page):
     # State
@@ -33,6 +34,9 @@ def FirewallView(page: ft.Page):
 
     def add_to_blocklist(e):
         if ip_input.value and ip_input.value not in blocklist:
+            # Real Block (Windows)
+            FirewallManager.block_ip(ip_input.value)
+            
             blocklist.append(ip_input.value)
             save_all()
             ip_input.value = ""
@@ -47,6 +51,8 @@ def FirewallView(page: ft.Page):
 
     def remove_ip(ip, list_type):
         if list_type == "block" and ip in blocklist:
+            # Real Unblock (Windows)
+            FirewallManager.unblock_ip(ip)
             blocklist.remove(ip)
         elif list_type == "white" and ip in whitelist:
             whitelist.remove(ip)

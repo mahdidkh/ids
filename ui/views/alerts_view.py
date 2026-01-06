@@ -27,7 +27,7 @@ def AlertsView(page: ft.Page):
         rows.append(
             ft.DataRow(
                 cells=[
-                    ft.DataCell(ft.Text(alert.get('timestamp', 'N/A'), color=c)),
+                    ft.DataCell(ft.Text(alert.get('timestamp') or alert.get('logged_at') or 'N/A', color=c)),
                     ft.DataCell(ft.Text(alert.get('src_ip', 'N/A'), color=c, weight=ft.FontWeight.BOLD)),
                     ft.DataCell(ft.Text(alert.get('type', 'Unknown'), color=c)),
                     ft.DataCell(ft.Text(alert.get('description', '-'), color=c, size=12, overflow=ft.TextOverflow.ELLIPSIS)),
@@ -41,7 +41,7 @@ def AlertsView(page: ft.Page):
             ft.Text("Alerts Dashboard", size=30, weight=ft.FontWeight.BOLD),
             ft.Container(
                 content=ft.Text("No alerts found.", size=20, color=ft.Colors.GREY_500),
-                alignment=ft.alignment.center,
+                alignment=ft.Alignment(0, 0),
                 expand=True
             )
         ], expand=True)

@@ -5,7 +5,7 @@ import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 LOG_DIR = os.path.join(BASE_DIR, "logs")
 
-ALERTS_FILE = os.path.join(LOG_DIR, "alerts.json")
+ALERTS_FILE = os.path.join(LOG_DIR, "attacks.json")
 ATTACKS_FILE = os.path.join(LOG_DIR, "attacks.json")
 FIREWALL_FILE = os.path.join(LOG_DIR, "firewall_rules.json")
 
@@ -48,15 +48,3 @@ def save_firewall_rules(rules):
     except Exception as e:
         print(f"Error saving firewall rules: {e}")
         return False
-
-def get_geo_info(ip_address):
-    """
-    Simulates basic GeoIP resolution.
-    In a real app, use 'geoip2' or an API.
-    """
-    if ip_address.startswith("192.168.") or ip_address.startswith("10.") or ip_address.startswith("127."):
-        return {"country": "Local LAN", "city": "Internal", "flag": "🏠"}
-    elif ip_address == "8.8.8.8" or ip_address == "1.1.1.1":
-        return {"country": "USA", "city": "Google/Cloudflare", "flag": "🇺🇸"}
-    else:
-        return {"country": "Unknown External", "city": "Internet", "flag": "🌍"}

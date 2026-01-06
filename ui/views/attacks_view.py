@@ -1,5 +1,6 @@
 import flet as ft
-from utils.data_handler import get_attacks, get_geo_info, get_firewall_rules, save_firewall_rules
+from utils.data_handler import get_attacks, get_firewall_rules, save_firewall_rules
+from core.firewall_manager import FirewallManager
 import json
 
 def AttacksView(page: ft.Page, nav):
@@ -10,18 +11,81 @@ def AttacksView(page: ft.Page, nav):
     
     # Functions
     def show_details(attack_data):
-        print(f"DEBUG: Details button clicked for {attack_data.get('type')}")
-        
         def close_dlg(e):
             dlg.open = False
             page.update()
 
+        # Severity color logic
+        count = attack_data.get('count', 1)
+        severity_color = ft.Colors.RED_400 if count > 10 else ft.Colors.ORANGE_400 if count > 1 else ft.Colors.BLUE_400
+
         dlg = ft.AlertDialog(
-            title=ft.Text("Attack Report Details"),
-            content=ft.Text(json.dumps(attack_data, indent=2), size=11),
+            shape=ft.RoundedRectangleBorder(radius=15),
+            title=ft.Row([
+                ft.Icon(ft.Icons.ANALYTICS_OUTLINED, color=ft.Colors.CYAN_200),
+                ft.Text("Digital Forensic Report", size=20, weight=ft.FontWeight.BOLD)
+            ], spacing=10),
+            content=ft.Container(
+                width=400,
+                content=ft.Column([
+                    ft.Divider(color=ft.Colors.GREY_800),
+                    
+                    # Attack Header
+                    ft.Container(
+                        padding=15,
+                        bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.WHITE),
+                        border_radius=10,
+                        content=ft.Column([
+                            ft.Text("ATTACK SIGNATURE", size=10, color=ft.Colors.CYAN_200, weight=ft.FontWeight.BOLD),
+                            ft.Text(attack_data.get('type', 'Unknown').upper(), size=24, weight=ft.FontWeight.BOLD, color=ft.Colors.RED_400),
+                        ], spacing=0)
+                    ),
+
+                    ft.Divider(height=10, color=ft.Colors.TRANSPARENT),
+
+                    # Data Grid
+                    ft.Column([
+                        ft.Row([
+                            ft.Icon(ft.Icons.ACCESS_TIME, size=16, color=ft.Colors.GREY_400),
+                            ft.Text("Date/Time:", size=13, weight=ft.FontWeight.W_500, color=ft.Colors.GREY_400),
+                            ft.Text(attack_data.get('logged_at') or attack_data.get('timestamp') or 'N/A', size=13, color=ft.Colors.WHITE)
+                        ], spacing=10),
+                        
+                        ft.Row([
+                            ft.Icon(ft.Icons.LAN_OUTLINED, size=16, color=ft.Colors.GREY_400),
+                            ft.Text("Source IP:", size=13, weight=ft.FontWeight.W_500, color=ft.Colors.GREY_400),
+                            ft.Text(attack_data.get('src_ip', 'Unknown'), size=13, weight=ft.FontWeight.BOLD, color=ft.Colors.CYAN_400)
+                        ], spacing=10),
+                        
+                        ft.Row([
+                            ft.Icon(ft.Icons.NUMBERS, size=16, color=ft.Colors.GREY_400),
+                            ft.Text("Occurrences:", size=13, weight=ft.FontWeight.W_500, color=ft.Colors.GREY_400),
+                            ft.Container(
+                                content=ft.Text(f"{count} Events", size=11, weight=ft.FontWeight.BOLD),
+                                padding=ft.padding.symmetric(horizontal=8, vertical=2),
+                                bgcolor=severity_color,
+                                border_radius=5
+                            )
+                        ], spacing=10),
+                    ], spacing=12),
+
+                    ft.Divider(color=ft.Colors.GREY_800),
+
+                    # Description Section
+                    ft.Text("INCIDENT DESCRIPTION", size=10, color=ft.Colors.GREY_500, weight=ft.FontWeight.BOLD),
+                    ft.Container(
+                        padding=10,
+                        border=ft.border.all(1, ft.Colors.GREY_800),
+                        border_radius=8,
+                        content=ft.Text(attack_data.get('description', '-'), size=13, italic=True, color=ft.Colors.GREY_200)
+                    ),
+                    
+                ], tight=True, spacing=15),
+            ),
             actions=[
-                ft.TextButton("Close", on_click=close_dlg),
+                ft.TextButton("Close Report", on_click=close_dlg, icon=ft.Icons.CHECK_CIRCLE_OUTLINE),
             ],
+            actions_alignment=ft.MainAxisAlignment.END,
         )
         
         # Overlay approach is more robust in some Flet versions
@@ -35,9 +99,12 @@ def AttacksView(page: ft.Page, nav):
     def block_ip(ip):
         rules = get_firewall_rules()
         if ip not in rules["blocklist"]:
+            # Real Block (Windows)
+            FirewallManager.block_ip(ip)
+            
             rules["blocklist"].append(ip)
             save_firewall_rules(rules)
-            page.snack_bar = ft.SnackBar(ft.Text(f"IP {ip} blocked successfully!"), bgcolor=ft.Colors.RED_700)
+            page.snack_bar = ft.SnackBar(ft.Text(f"IP {ip} blocked & isolated!"), bgcolor=ft.Colors.RED_700)
             page.snack_bar.open = True
             page.update()
             # Refresh view to show Unblock button
@@ -50,9 +117,12 @@ def AttacksView(page: ft.Page, nav):
     def unblock_ip(ip):
         rules = get_firewall_rules()
         if ip in rules["blocklist"]:
+            # Real Unblock (Windows)
+            FirewallManager.unblock_ip(ip)
+            
             rules["blocklist"].remove(ip)
             save_firewall_rules(rules)
-            page.snack_bar = ft.SnackBar(ft.Text(f"IP {ip} unblocked!"), bgcolor=ft.Colors.GREEN_700)
+            page.snack_bar = ft.SnackBar(ft.Text(f"IP {ip} restored."), bgcolor=ft.Colors.GREEN_700)
             page.snack_bar.open = True
             page.update()
             # Refresh
@@ -72,7 +142,7 @@ def AttacksView(page: ft.Page, nav):
             ft.Divider(),
             ft.Container(
                 content=ft.Text("No attacks recorded yet.", size=20, color=ft.Colors.GREY_500),
-                alignment=ft.alignment.center,
+                alignment=ft.Alignment(0, 0),
                 expand=True
             )
         ], expand=True)
@@ -89,7 +159,6 @@ def AttacksView(page: ft.Page, nav):
 
     for attack in attacks:
         src_ip = attack.get("src_ip", "Unknown")
-        geo = get_geo_info(src_ip)
         
         # Severity Color
         card_color = ft.Colors.GREY_900
@@ -112,14 +181,14 @@ def AttacksView(page: ft.Page, nav):
                         ft.Container(
                             content=ft.Icon(ft.Icons.SECURITY, color=ft.Colors.RED_200, size=40),
                             padding=10,
-                            alignment=ft.alignment.center
+                            alignment=ft.Alignment(0, 0)
                         ),
                         # Info Section
                         ft.Column([
                             ft.Text(f"{attack.get('type', 'Unknown Attack').upper()}", weight=ft.FontWeight.BOLD, color=ft.Colors.RED_100),
                             ft.Row([
-                               ft.Text(f"{geo['flag']} {geo['country']}", size=12, color=ft.Colors.CYAN_200),
-                               ft.Text(f"• IP: {src_ip}", size=12, color=ft.Colors.GREY_400),
+                               ft.Icon(ft.Icons.LANGUAGE, size=12, color=ft.Colors.CYAN_200),
+                               ft.Text(f"IP: {src_ip}", size=12, color=ft.Colors.GREY_400),
                             ]),
                             ft.Text(f"Count: {count} | Last: {attack.get('logged_at', '')}", size=10, color=ft.Colors.GREY_500),
                         ], alignment=ft.MainAxisAlignment.CENTER, spacing=2, expand=True),

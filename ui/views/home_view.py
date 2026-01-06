@@ -18,8 +18,8 @@ def HomeView(page: ft.Page, nav):
         width=page.window_width,
         border_radius=20,
         gradient=ft.LinearGradient(
-            begin=ft.alignment.top_left,
-            end=ft.alignment.bottom_right,
+            begin=ft.Alignment(-1, -1),
+            end=ft.Alignment(1, 1),
             colors=[ft.Colors.GREY_900, ft.Colors.BLUE_900],
         ),
         shadow=ft.BoxShadow(spread_radius=1, blur_radius=15, color=ft.Colors.with_opacity(0.3, ft.Colors.BLACK))
